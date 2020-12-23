@@ -1,0 +1,27 @@
+<launch>
+  <arg name="x_pos" default="4"/>
+  <arg name="y_pos" default="1.5"/>
+  <arg name="z_pos" default="0.0"/>
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find turtlebot3_gazebo)/worlds/ICRA2020.world"/>
+    <arg name="paused" value="false"/>
+    <!-- <arg name="use_sim_time" value="0.1"/> -->
+    <arg name="use_sim_time" value="true"/>
+
+    <arg name="gui" value="true"/>
+    <arg name="headless" value="false"/>
+    <arg name="debug" value="false"/>
+  </include>  
+
+
+  <param name="robot_description" command="$(find xacro)/xacro.py $(find turtlebot3_gazebo)/models/turtlebot3_Mac/urdf/nexus_4wd_mecanum.xacro" />
+
+  <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model turtlebot3_burger -x $(arg x_pos) -y $(arg y_pos) -z $(arg z_pos) -param robot_description" />
+  
+   <node name="map_server" pkg="map_server" type="map_server" args="$(find turtlebot3_dqn)/map/1AI2020.yaml"/>  
+   <node pkg="tf" type="static_transform_publisher" name="map_odom_broadcaster" args="0.2 0.2 0 0 0 0 /map /odom 100" />
+   <node pkg="tf" type="static_transform_publisher" name="baselink_broadcaster" args="0.0 0.0 0 0 0 0 /base_footprint /base_link 100" />
+   <node pkg="tf" type="static_transform_publisher" name="laser_broadcaster" args="0.0 0.0 0 0 0 0 /base_footprint /base_scan 100" />
+
+</launch>

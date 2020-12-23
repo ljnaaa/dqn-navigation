@@ -59,7 +59,7 @@
       <publishTf>true</publishTf>
       <publishWheelJointState>true</publishWheelJointState>
       <legacyMode>false</legacyMode>
-      <updateRate>30</updateRate>
+                                                
       <leftJoint>wheel_left_joint</leftJoint>
       <rightJoint>wheel_right_joint</rightJoint>
       <wheelSeparation>0.160</wheelSeparation>
@@ -93,11 +93,9 @@
             <stddev>1.7e-2</stddev>
             <bias_mean>0.1</bias_mean>
             <bias_stddev>0.001</bias_stddev>
-          </accel>
-        </noise>
-      </imu>
-    </plugin>
-  </gazebo>
+          </accel>caster_back_link
+
+
 
   <gazebo reference="base_scan">
     <material>Gazebo/FlatBlack</material>
