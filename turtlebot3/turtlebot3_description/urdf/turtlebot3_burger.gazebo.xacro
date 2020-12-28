@@ -94,7 +94,10 @@
             <bias_mean>0.1</bias_mean>
             <bias_stddev>0.001</bias_stddev>
           </accel>caster_back_link
-
+        </noise>
+       </imu> 
+    </plugin>
+  </gazebo>
 
 
   <gazebo reference="base_scan">
