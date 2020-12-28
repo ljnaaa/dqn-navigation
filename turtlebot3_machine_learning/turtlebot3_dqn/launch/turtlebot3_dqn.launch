@@ -1,0 +1,6 @@
+<launch>
+  <include file="$(find turtlebot3_dqn)/launch/costmap.launch"/>
+  <arg name="stage" default="1"/>
+  <param name="stage_number"  value="$(arg stage)"/>
+  <node pkg="turtlebot3_dqn" type="dqn_node.py" name="dqn_node" output="screen" />
+</launch>

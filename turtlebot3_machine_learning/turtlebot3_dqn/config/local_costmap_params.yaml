@@ -1,0 +1,35 @@
+local_costmap:
+   global_frame: map
+   map_topic: map
+   robot_base_frame: base_link
+   update_frequency: 4
+   publish_frequency: 4
+   static_map: false
+   rolling_window: true
+   width: 3
+   height: 3
+   resolution: 0.05
+   transform_tolerance: 1.0
+   map_type: costmap
+   inflation_layer: 
+      inflation_radius: 0.4
+
+   obstacle_layer:
+     observation_sources: scan  
+     scan: {data_type: LaserScan, topic: /scan, marking: true, clearing: true, expected_update_rate: 15} 
+   static_layer:
+     lethal_cost_threshold: 1
+
+
+
+   plugins:
+     - {name: static_layer, type: "costmap_2d::StaticLayer"} 
+     - {name: obstacle_layer, type: "costmap_2d::VoxelLayer"}
+     - {name: inflation_layer, type: "costmap_2d::InflationLayer"}   #inflation_layer must be defined after obstacle_layer
+
+
+   #   - {name: social_layer, type: "social_navigation_layers::ProxemicLayer"}   
+   #   - {name: social_pass_layer, type: "social_navigation_layers::PassingLayer"}  
+
+ 
+
