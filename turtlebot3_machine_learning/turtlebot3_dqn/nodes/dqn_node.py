@@ -124,13 +124,12 @@ def UseNoise(Network):
                     agent.trainModel()
                 else:
                     agent.trainModel(True)
-
+            train = time.time()
             score += reward
             state = next_state
             get_action.data = [action, score, reward]
             pub_get_action.publish(get_action)
-
-    
+            
             if e % 20 == 0 and t==0:
                 torch.save(agent.model.state_dict(),agent.dirPath + str(e) + '.pth')
                 torch.save(agent.target_model.state_dict(),agent.dirPath + str(e) + 'target.pth')
@@ -157,6 +156,7 @@ def UseNoise(Network):
 
                 rospy.loginfo('Ep: %d score: %.2f memory: %d time: %d:%02d:%02d',
                               e, score, len(agent.memory), h, m, s)
+                break
 
             global_step += 1
             if global_step % agent.target_update == 0:
