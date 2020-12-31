@@ -19,8 +19,8 @@ def train(state_dim,action_dim):
     ######### Hyperparameters #########
     log_interval = 5           # print avg reward after interval
     gamma = 0.99                # discount for future rewards
-    batch_size = 100            # num of transitions sampled from replay buffer
-    lr = 2e-4
+    batch_size = 256            # num of transitions sampled from replay buffer
+    lr = 1e-4
     exploration_noise = 1
     polyak = 0.995              # target policy update parameter (1-tau)
     policy_noise = 0.2          # target policy smoothing noise
@@ -41,6 +41,7 @@ def train(state_dim,action_dim):
     max_action = 1.0
     
     policy = TD3(lr, state_dim, action_dim, max_action)
+    policy.load(directory,filename)
     replay_buffer = ReplayBuffer()
     # replay_buffer = Memory(5e4,3,0.99)
 
@@ -54,7 +55,8 @@ def train(state_dim,action_dim):
     # training procedure:
     for episode in range(1, max_episodes+1):
         state = env.reset()
-        exploration_noise = exploration_noise*0.985
+        if exploration_noise>0.25:
+            exploration_noise = exploration_noise*0.995
         for t in range(max_timesteps):
             # select action and add exploration noise:
             action = policy.select_action(state)
@@ -87,7 +89,7 @@ def train(state_dim,action_dim):
         log_f.flush()
         ep_reward = 0
         
-        if episode > 200 and episode%10 == 0:
+        if episode > 300 and episode%10 == 0:
             policy.save(directory, filename)
         
         # print avg reward every log interval:

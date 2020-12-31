@@ -100,7 +100,7 @@ class Env():
         
         current_distance = state[-1]
         heading = state[-2]
-        angle = heading+action*pi/8+pi/2
+        angle = heading+action*pi/8 +pi/2
         tr = 1 - 4 * math.fabs(0.5 - math.modf(0.25 + 0.5 * (angle) % (2 * math.pi) / math.pi)[0])   # tr->1 when angle->0 tr->-1 when angle->180
 
         # reward = (self.lastDis - current_distance ) * 200
