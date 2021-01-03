@@ -115,10 +115,13 @@ def Inference(state_dim,action_dim):
     env = Env()
     state = env.reset()
     rate = rospy.Rate(10)
+
     while not rospy.is_shutdown():
         action = policy.select_action(state)
         next_state, reward, done, finish = env.step(action)
         state = next_state
+        if done:
+            state = env.reset()
         rate.sleep()
 
 
