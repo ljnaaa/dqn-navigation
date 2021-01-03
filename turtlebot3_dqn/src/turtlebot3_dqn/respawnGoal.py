@@ -28,7 +28,7 @@ from geometry_msgs.msg import Pose
 class Respawn(object):
     def __init__(self):
         self.modelPath = os.path.dirname(os.path.realpath(__file__))
-        self.modelPath = self.modelPath.replace('turtlebot3_machine_learning/turtlebot3_dqn/src/turtlebot3_dqn',
+        self.modelPath = self.modelPath.replace('turtlebot3_dqn/src/turtlebot3_dqn',
                                                 'turtlebot3_simulations/turtlebot3_gazebo/models/turtlebot3_square/goal_box/model.sdf')
         self.f = open(self.modelPath, 'r')
         self.model = self.f.read()

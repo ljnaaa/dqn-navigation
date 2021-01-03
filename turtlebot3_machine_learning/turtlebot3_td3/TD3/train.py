@@ -105,11 +105,33 @@ def train(state_dim,action_dim):
             print("Episode: {}\tAverage Reward: {}".format(episode, avg_reward))
             avg_reward = 0
 
+def Inference(state_dim,action_dim):
+    load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer_only/models11_5step") # save trained models
+    load_filename = "TD3_{}".format("stage2")
+    max_action = 1.0
+    lr = 1e-7
+    policy = TD3(lr, state_dim, action_dim, max_action)
+    policy.load(load_directory,load_filename)
+    env = Env()
+    state = env.reset()
+    rate = rospy.Rate(10)
+    while not rospy.is_shutdown():
+        action = policy.select_action(state)
+        next_state, reward, done, finish = env.step(action)
+        state = next_state
+        rate.sleep()
+
+
+
+
+
+
 if __name__ == '__main__':
     rospy.init_node("turtlebot3_td3")
     pub_result = rospy.Publisher('result', Float32MultiArray, queue_size=5)
     pub_get_action = rospy.Publisher('get_action', Float32MultiArray, queue_size=5)
-    state_dim = 28
-    action_dim = 2    #只控制旋转
-    train(state_dim,action_dim)
+    state_dim = 26
+    action_dim = 1    #只控制旋转
+    # train(state_dim,action_dim)
+    Inference(state_dim,action_dim)
     

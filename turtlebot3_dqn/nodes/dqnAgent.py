@@ -818,7 +818,7 @@ class Rainbow(NoisyDuelingDDQN):
 
 
     def load_model(self,epoch):
-        dir = "/home/cmq/ljn/RL/turtlebot3/src/turtlebot3_machine_learning/turtlebot3_dqn/save_model"
+        dir = "/home/cmq/ljn/RL/turtlebot3/src/dqn-navigation/turtlebot3_dqn/save_model"
         model = os.path.join(dir,"stage_1_"+str(epoch)+".pth")
         target_model = os.path.join(dir,"stage_1_"+str(epoch)+"target"+".pth")
 
@@ -860,6 +860,6 @@ class Rainbow(NoisyDuelingDDQN):
         # self.current = len(self.lossMemory)
                 
     def inference(self,state):
-        action = self.model(torch.FloatTensor(state).cuda())
-        print (action)
+        action_q = self.model(torch.FloatTensor(state).cuda())
+        action = np.argmax(action_q.cpu().detach().numpy())
         return action

@@ -168,10 +168,13 @@ def Inference(agent):
     rospy.init_node("turtlebot3_dqn_stage_1")
     env = Env(action_size)
     rate = rospy.Rate(10)
-    env.reset()
+    state = env.reset()
     while(not rospy.is_shutdown()):
-        state = env.Humanstep()
-        agent.inference(state)
+        action = agent.inference(state)
+        next_state, reward, done, finish= env.step(action)
+        state = next_state
+        if done:
+            state = env.reset()
         rate.sleep()
 
 
@@ -179,6 +182,6 @@ def Inference(agent):
 if __name__ == '__main__':
     state_size = 26
     action_size = 5
-    agent = Rainbow(state_size,action_size,3,True,True)
-    UseNoise(agent)
-    # Inference(agent)
+    agent = Rainbow(state_size,action_size,3,True,True,220)
+    # UseNoise(agent)
+    Inference(agent)

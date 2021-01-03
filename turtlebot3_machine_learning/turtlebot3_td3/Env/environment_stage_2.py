@@ -93,8 +93,8 @@ class Env():
         if current_distance < 0.2:
             self.get_goalbox = True
             finish = True
-        # return scan_range + [heading, current_distance], done, finish
-        return scan_range + [heading, current_distance, obstacle_min_range, obstacle_angle], done, finish
+        return scan_range + [heading, current_distance], done, finish
+        # return scan_range + [heading, current_distance, obstacle_min_range, obstacle_angle], done, finish
 
     def setReward(self, state, done, action):
         
@@ -126,9 +126,10 @@ class Env():
 
     def step(self, action):
         max_angle_vel = 2
-        max_linear_spd = 0.3
+        max_linear_spd = 0.15
         vel_cmd = Twist()
-        vel_cmd.linear.x = action[1] * max_linear_spd
+        # vel_cmd.linear.x = action[1] * max_linear_spd
+        vel_cmd.linear.x = max_linear_spd
         vel_cmd.angular.z = action[0] * max_angle_vel
         self.pub_cmd_vel.publish(vel_cmd)
 
