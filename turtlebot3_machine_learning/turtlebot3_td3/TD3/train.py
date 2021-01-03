@@ -6,7 +6,7 @@ import numpy as np
 from TD3 import TD3
 import time
 import rospy
-from utils import ReplayBuffer
+from utils import ReplayBuffer,MultiStepMemory,PER
 from PER import Memory
 from std_msgs.msg import Float32MultiArray
 import sys
@@ -28,12 +28,14 @@ def train(state_dim,action_dim):
     policy_delay = 2            # delayed policy updates parameter
     max_episodes = 1000         # max num of episodes
     max_timesteps = 300        # max timesteps in one episode
-    directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"models") # save trained models
+    load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"basic_models") # save trained models
+    directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models13") # save trained models
     if not os.path.exists(directory):
         os.mkdir(directory)
         print("Make Folder")
     else:
         print("Folder Exists")
+    load_filename = "TD3_{}".format("stage1")
     filename = "TD3_{}".format("stage2")
     ###################################
     
@@ -41,8 +43,11 @@ def train(state_dim,action_dim):
     max_action = 1.0
     
     policy = TD3(lr, state_dim, action_dim, max_action)
-    policy.load(directory,filename)
+    # policy.load(load_directory,load_filename)
     replay_buffer = ReplayBuffer()
+    # replay_buffer = MultiStepMemory(5,0.99)
+    # replay_buffer = replay_buffer = PER(10000,5,0.99)
+    print("normal")
     # replay_buffer = Memory(5e4,3,0.99)
 
     env = Env()
@@ -50,7 +55,8 @@ def train(state_dim,action_dim):
     # logging variables:
     avg_reward = 0
     ep_reward = 0
-    log_f = open("log.txt","w+")
+    log_path = os.path.join(directory,"log.txt")
+    log_f = open(log_path,"w+")
     
     # training procedure:
     for episode in range(1, max_episodes+1):
@@ -72,7 +78,7 @@ def train(state_dim,action_dim):
             
             avg_reward += reward
             ep_reward += reward
-            action_msg.data = [action,ep_reward,reward]
+            action_msg.data = [action[0],action[1],ep_reward,reward]
             pub_get_action.publish(action_msg)
             # if episode is done then update policy:
 
@@ -81,7 +87,8 @@ def train(state_dim,action_dim):
                 result_msg = Float32MultiArray()
                 result_msg.data = [ep_reward,episode]
                 pub_result.publish(result_msg)
-                policy.update(replay_buffer, t, batch_size, gamma, polyak, policy_noise, noise_clip, policy_delay)
+                if len(replay_buffer)>batch_size:
+                    policy.update(replay_buffer, t, batch_size, gamma, polyak, policy_noise, noise_clip, policy_delay)
                 break
         
         # logging updates:
@@ -89,7 +96,7 @@ def train(state_dim,action_dim):
         log_f.flush()
         ep_reward = 0
         
-        if episode > 300 and episode%10 == 0:
+        if episode > 100 and episode%10 == 0:
             policy.save(directory, filename)
         
         # print avg reward every log interval:
@@ -102,7 +109,7 @@ if __name__ == '__main__':
     rospy.init_node("turtlebot3_td3")
     pub_result = rospy.Publisher('result', Float32MultiArray, queue_size=5)
     pub_get_action = rospy.Publisher('get_action', Float32MultiArray, queue_size=5)
-    state_dim = 26
-    action_dim = 1    #只控制旋转
+    state_dim = 28
+    action_dim = 2    #只控制旋转
     train(state_dim,action_dim)
     

@@ -109,7 +109,7 @@ class Memory(object):  # stored as ( s, a, r, s_ ) in SumTree
         for transition in reversed(list(self.nstep_buffer)[:-1]):
             rew,next_s,d = transition[-3:]
             if d:
-                rewads = rew
+                rewards = rew
                 next_state,done = next_s,d
             else:
                 rewards = rew + self.gamma * rewards

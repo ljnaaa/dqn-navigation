@@ -66,7 +66,7 @@ class TD3:
         for i in range(n_iter):
             # Sample a batch of transitions from replay buffer:
             state, action_, reward, next_state, done = replay_buffer.sample(batch_size)
-            # (state, action_, reward, next_state, done),idx,weights = replay_buffer.sample(batch_size)
+            # state, action_, reward, next_state, done,idx,weights = replay_buffer.sample(batch_size)
             state = torch.FloatTensor(state).to(device)
             action = torch.FloatTensor(action_).to(device)
             reward = torch.FloatTensor(reward).reshape((batch_size,1)).to(device)
@@ -87,6 +87,8 @@ class TD3:
             
             # Optimize Critic 1:
             current_Q1 = self.critic_1(state, action)
+            # replay_buffer.batch_update(idx,torch.abs(target_Q-current_Q1).detach().cpu().numpy())
+            # loss_Q1 = (torch.pow(current_Q1-target_Q,2) * torch.FloatTensor(weights).cuda()).mean()
             loss_Q1 = F.mse_loss(current_Q1, target_Q)
             self.critic_1_optimizer.zero_grad()
             loss_Q1.backward()
@@ -94,6 +96,7 @@ class TD3:
             
             # Optimize Critic 2:
             current_Q2 = self.critic_2(state, action)
+            # loss_Q2 = (torch.pow(current_Q2-target_Q,2) * torch.FloatTensor(weights).cuda()).mean()
             loss_Q2 = F.mse_loss(current_Q2, target_Q)
             self.critic_2_optimizer.zero_grad()
             loss_Q2.backward()

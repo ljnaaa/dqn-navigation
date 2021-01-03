@@ -93,16 +93,15 @@ class Env():
         if current_distance < 0.2:
             self.get_goalbox = True
             finish = True
-        return scan_range + [heading, current_distance], done, finish
-        # return scan_range + [heading, current_distance, obstacle_min_range, obstacle_angle], done, finish
+        # return scan_range + [heading, current_distance], done, finish
+        return scan_range + [heading, current_distance, obstacle_min_range, obstacle_angle], done, finish
 
     def setReward(self, state, done, action):
         
-        current_distance = state[-1]
-        heading = state[-2]
-        angle = heading+action*pi/8 +pi/2
+        current_distance = state[-3]
+        heading = state[-4]
+        angle = heading+action[0]*pi/8 +pi/2
         tr = 1 - 4 * math.fabs(0.5 - math.modf(0.25 + 0.5 * (angle) % (2 * math.pi) / math.pi)[0])   # tr->1 when angle->0 tr->-1 when angle->180
-
         # reward = (self.lastDis - current_distance ) * 200
         # self.lastDis = current_distance
         # reward = 0
@@ -127,10 +126,10 @@ class Env():
 
     def step(self, action):
         max_angle_vel = 2
-
+        max_linear_spd = 0.3
         vel_cmd = Twist()
-        vel_cmd.linear.x = 0.15
-        vel_cmd.angular.z = action * max_angle_vel
+        vel_cmd.linear.x = action[1] * max_linear_spd
+        vel_cmd.angular.z = action[0] * max_angle_vel
         self.pub_cmd_vel.publish(vel_cmd)
 
         data = None
