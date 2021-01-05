@@ -6,8 +6,10 @@ local_costmap:
    publish_frequency: 4
    static_map: false
    rolling_window: true
-   width: 3
-   height: 3
+   width: 6
+   height: 6
+   origin_x: -3
+   origin_y: -3
    resolution: 0.05
    transform_tolerance: 1.0
    map_type: costmap
@@ -16,7 +18,7 @@ local_costmap:
 
    obstacle_layer:
      observation_sources: scan  
-     scan: {data_type: LaserScan, topic: /scan, marking: true, clearing: true, expected_update_rate: 15} 
+     scan: {data_type: LaserScan, topic: /scan, marking: true, clearing: true, expected_update_rate: 10} 
    static_layer:
      lethal_cost_threshold: 1
 
