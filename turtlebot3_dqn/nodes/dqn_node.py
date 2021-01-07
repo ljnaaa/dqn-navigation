@@ -166,6 +166,8 @@ def UseNoise(Network):
 
 def Inference(agent):
     rospy.init_node("turtlebot3_dqn_stage_1")
+    pub_get_action = rospy.Publisher('get_action', Float32MultiArray, queue_size=5)
+    get_action = Float32MultiArray()
     env = Env(action_size)
     rate = rospy.Rate(10)
     state = env.reset()
@@ -173,6 +175,8 @@ def Inference(agent):
         action = agent.inference(state)
         next_state, reward, done, finish= env.step(action)
         state = next_state
+        get_action.data = [action, 0, reward]
+        pub_get_action.publish(get_action)
         if done:
             state = env.reset()
         rate.sleep()
