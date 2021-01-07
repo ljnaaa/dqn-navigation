@@ -21,13 +21,16 @@ from numpy.lib.function_base import delete
 import rospy
 import numpy as np
 import math
-from math import pi
-from geometry_msgs.msg import Twist, Point, Pose
+from math import floor, pi
+from geometry_msgs.msg import Twist, Point, Pose,PoseStamped
 from sensor_msgs.msg import LaserScan
-from nav_msgs.msg import Odometry
+from nav_msgs.msg import Odometry,Path
+from nav_msgs.srv import GetPlan
 from std_srvs.srv import Empty
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from respawnGoal import Respawn
+import tf2_ros
+import tf
 
 
 class Env():
@@ -38,6 +41,7 @@ class Env():
         self.initGoal = True
         self.get_goalbox = False
         self.position = Pose()
+        self.pose = PoseStamped()
         self.pub_cmd_vel = rospy.Publisher('cmd_vel', Twist, queue_size=5)
         self.sub_odom = rospy.Subscriber('odom', Odometry, self.getOdometry)
         self.reset_proxy = rospy.ServiceProxy('gazebo/reset_simulation', Empty)
@@ -45,14 +49,58 @@ class Env():
         self.pause_proxy = rospy.ServiceProxy('gazebo/pause_physics', Empty)
         self.respawn_goal = Respawn()
         self.action_space_shape = 1
+        self.listener=tf.TransformListener()
+        self.listener.waitForTransform('map', 'odom', rospy.Time(0), rospy.Duration(5))
+        self.path = Path()
+
+        # self.tf_buffer = tf2_ros.Buffer()
+
 
     def getGoalDistace(self):
         goal_distance = round(math.hypot(self.goal_x - self.position.x, self.goal_y - self.position.y), 2)
+        self.getPath()
         self.lastDis = goal_distance
         return goal_distance
 
+    def PathLimit(self,path,length=100):    #limit the length of the path
+        if len(path)<=100:
+            self.path = path
+        else:
+            interval = float(len(path))/length
+            self.path = []
+            for i in range(length):
+                index = int(floor(interval * i))
+                self.path.append(path[index])
+
+    def CalDis(self):
+        min_dis = 999.0
+        for point in self.path:
+            dis = (self.position.x - point.pose.position.x)**2 + (self.position.y - point.pose.position.y)**2
+            dis = math.sqrt(dis)
+            min_dis = min(dis,min_dis)
+        return min_dis
+
+    def getPath(self):
+        goal = PoseStamped()
+        goal.header = self.pose.header
+        goal.header.stamp = rospy.Time.now()
+        goal.pose.position.x = self.goal_x
+        goal.pose.position.y = self.goal_y
+        getPathSrv = rospy.ServiceProxy('/move_base/make_plan',GetPlan)
+        self.listener.waitForTransform('map', 'odom', rospy.Time(0), rospy.Duration(5))
+        goal_map = self.listener.transformPose('map',goal)
+        start_map = self.listener.transformPose('map',self.pose)
+        try:
+            path = getPathSrv(start_map,goal_map,0.4)
+            self.PathLimit(path.plan.poses)
+        except rospy.ServiceException as exc:
+            print("Service did not process request: " + str(exc))
+
     def getOdometry(self, odom):
+        self.odom = odom
         self.position = odom.pose.pose.position
+        self.pose.header = odom.header
+        self.pose.pose = odom.pose.pose
         orientation = odom.pose.pose.orientation
         orientation_list = [orientation.x, orientation.y, orientation.z, orientation.w]
         _, _, yaw = euler_from_quaternion(orientation_list)
@@ -106,8 +154,11 @@ class Env():
         self.lastDis = current_distance
         # reward = 0
         distance_rate = 2 ** (current_distance / self.goal_distance)
-        reward = ((round(tr*5, 2)) * distance_rate)
-        # reward = move_dis
+        path_dis = self.CalDis()
+        path_dis = max(0.3,path_dis)
+        path_dis_reward = path_dis*5/0.3
+        # reward = ((round(tr*5, 2)) * distance_rate)
+        reward = move_dis+path_dis_reward
         if done:
             rospy.loginfo("Collision!!")
             reward = -150

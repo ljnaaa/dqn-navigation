@@ -7,5 +7,5 @@
 
   <include file="$(find turtlebot3_dqn)/launch/costmap.launch"/>
   <param name="stage_number"  value="$(arg stage)"/>
-  <node pkg="turtlebot3_td3" type="train.py" name="train" output="screen" />
+  <node pkg="turtlebot3_td3" type="TD3_navigation.py" name="TD3_navigation" output="screen" />
 </launch>

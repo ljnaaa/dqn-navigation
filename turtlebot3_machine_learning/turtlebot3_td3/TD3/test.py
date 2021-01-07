@@ -8,9 +8,17 @@ import time
 import rospy
 import sys
 import os
+import math
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from Env.environment_stage_2 import Env
 from std_msgs.msg import Float32MultiArray
+from geometry_msgs.msg import PoseStamped
+from sensor_msgs.msg import LaserScan
+from nav_msgs.msg import Odometry
+
+
+    
 
 
 
@@ -20,7 +28,7 @@ def train(state_dim,action_dim):
     log_interval = 1
     max_episodes = 1000         # max num of episodes
     max_timesteps = 3000       # max timesteps in one episode
-    load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models13") # save trained models
+    load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models16") # save trained models
     load_filename = "TD3_{}".format("stage2")
     ###################################
     
