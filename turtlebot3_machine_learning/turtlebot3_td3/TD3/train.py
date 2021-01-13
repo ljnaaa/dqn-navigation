@@ -29,7 +29,7 @@ def train(state_dim,action_dim):
     max_episodes = 1000         # max num of episodes
     max_timesteps = 300        # max timesteps in one episode
     load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models16_basic") # save trained models
-    directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models16") # save trained models
+    directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models112") # save trained models
     if not os.path.exists(directory):
         os.mkdir(directory)
         print("Make Folder")
@@ -43,11 +43,11 @@ def train(state_dim,action_dim):
     max_action = 1.0
     
     policy = TD3(lr, state_dim, action_dim, max_action)
-    policy.load(load_directory,load_filename)
+    # policy.load(load_directory,load_filename)
     replay_buffer = ReplayBuffer()
     # replay_buffer = MultiStepMemory(5,0.99)
     # replay_buffer = replay_buffer = PER(10000,5,0.99)
-    print("normal")
+    print("normal Path reward")
     # replay_buffer = Memory(5e4,3,0.99)
 
     env = Env()

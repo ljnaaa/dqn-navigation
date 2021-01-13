@@ -195,3 +195,7 @@ class Env():
         self.goal_distance = self.getGoalDistace()
         state, done, finish = self.getState(data)
         return np.asarray(state)
+
+    
+    def getGoal(self):
+        return self.goal_x,self.goal_y

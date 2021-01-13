@@ -17,6 +17,7 @@
 
 # Authors: Gilbert #
 
+from shutil import move
 from numpy.lib.function_base import delete
 import rospy
 import numpy as np
@@ -87,9 +88,13 @@ class Env():
         goal.pose.position.x = self.goal_x
         goal.pose.position.y = self.goal_y
         getPathSrv = rospy.ServiceProxy('/move_base/make_plan',GetPlan)
-        self.listener.waitForTransform('map', 'odom', rospy.Time(0), rospy.Duration(5))
-        goal_map = self.listener.transformPose('map',goal)
-        start_map = self.listener.transformPose('map',self.pose)
+        # self.listener.waitForTransform('map', 'odom', rospy.Time(0), rospy.Duration(5))
+        # goal_map = self.listener.transformPose('map',goal)
+        # start_map = self.listener.transformPose('map',self.pose)
+        goal_map = goal
+        goal_map.header.frame_id = "map"
+        start_map = self.pose
+        start_map.header.frame_id = "map"
         try:
             path = getPathSrv(start_map,goal_map,0.4)
             self.PathLimit(path.plan.poses)
@@ -155,8 +160,10 @@ class Env():
         # reward = 0
         distance_rate = 2 ** (current_distance / self.goal_distance)
         path_dis = self.CalDis()
-        path_dis = max(0.3,path_dis)
-        path_dis_reward = path_dis*5/0.3
+        path_dis = min(0.5,path_dis)
+        path_dis_reward = 1-path_dis*3/0.5
+        path_dis_reward = max(-0.5,path_dis_reward)
+        move_dis = min(10,move_dis)
         # reward = ((round(tr*5, 2)) * distance_rate)
         reward = move_dis+path_dis_reward
         if done:

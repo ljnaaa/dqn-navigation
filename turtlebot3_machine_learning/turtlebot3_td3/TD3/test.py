@@ -21,6 +21,12 @@ from nav_msgs.msg import Odometry
     
 
 
+class NetworkTest(object):
+    def __init__(self,NetworkList):
+        self.NetworkList = NetworkList
+        self.totalStep = np.zeros(len(NetworkList))
+        
+
 
 def train(state_dim,action_dim):
     ######### Hyperparameters #########
@@ -28,7 +34,7 @@ def train(state_dim,action_dim):
     log_interval = 1
     max_episodes = 1000         # max num of episodes
     max_timesteps = 3000       # max timesteps in one episode
-    load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models16") # save trained models
+    load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models111") # save trained models
     load_filename = "TD3_{}".format("stage2")
     ###################################
     
