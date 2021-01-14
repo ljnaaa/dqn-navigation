@@ -78,6 +78,14 @@ class Respawn(object):
             else:
                 pass
 
+    def Setgoal(self,goal_x,goal_y):
+        self.deleteModel()
+        self.goal_position.position.x = goal_x
+        self.goal_position.position.y = goal_y
+        self.respawnModel()
+        return goal_x,goal_y
+
+
     def getPosition(self, position_check=False, delete=False):
         if delete:
             self.deleteModel()

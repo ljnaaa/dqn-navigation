@@ -12,7 +12,8 @@ from std_msgs.msg import Float32MultiArray
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
-from Env.environment_stage_2 import Env
+# from Env.environment_stage_2 import Env
+from Env.environment_icra import Env
 
 
 def train(state_dim,action_dim):
@@ -21,15 +22,15 @@ def train(state_dim,action_dim):
     gamma = 0.99                # discount for future rewards
     batch_size = 256            # num of transitions sampled from replay buffer
     lr = 1e-4
-    exploration_noise = 1.0
+    exploration_noise = 0.6
     polyak = 0.995              # target policy update parameter (1-tau)
     policy_noise = 0.2          # target policy smoothing noise
     noise_clip = 0.5
     policy_delay = 2            # delayed policy updates parameter
     max_episodes = 1000         # max num of episodes
-    max_timesteps = 300        # max timesteps in one episode
-    load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models16_basic") # save trained models
-    directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models112") # save trained models
+    max_timesteps = 500        # max timesteps in one episode
+    load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models13") # save trained models
+    directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models113_icra") # save trained models
     if not os.path.exists(directory):
         os.mkdir(directory)
         print("Make Folder")
@@ -43,7 +44,8 @@ def train(state_dim,action_dim):
     max_action = 1.0
     
     policy = TD3(lr, state_dim, action_dim, max_action)
-    # policy.load(load_directory,load_filename)
+    policy.load(load_directory,load_filename)
+    print("load "+load_directory)
     replay_buffer = ReplayBuffer()
     # replay_buffer = MultiStepMemory(5,0.99)
     # replay_buffer = replay_buffer = PER(10000,5,0.99)
@@ -61,7 +63,7 @@ def train(state_dim,action_dim):
     # training procedure:
     for episode in range(1, max_episodes+1):
         state = env.reset()
-        if exploration_noise>0.25:
+        if exploration_noise>0.1:
             exploration_noise = exploration_noise*0.995
         for t in range(max_timesteps):
             # select action and add exploration noise:

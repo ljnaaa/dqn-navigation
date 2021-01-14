@@ -1,0 +1,8 @@
+<launch>
+  <arg name="stage" default="2"/>
+  <param name="stage_number"  value="$(arg stage)"/>
+  <node name="map_server" pkg="map_server" type="map_server" args="$(find turtlebot3_dqn)/map/1AI2020.yaml"/> 
+
+  <include file="$(find turtlebot3_dqn)/launch/costmap.launch"/>
+  <node pkg="turtlebot3_td3" type="train.py" name="train" output="screen" />
+</launch>

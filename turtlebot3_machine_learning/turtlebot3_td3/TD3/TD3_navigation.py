@@ -13,6 +13,8 @@ from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from geometry_msgs.msg import PoseStamped,Point,Twist
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
+from std_srvs.srv import Empty
+
 
 
 class stage(object):
@@ -101,6 +103,7 @@ class TD3_Navigation(object):
         self.scan_sub = rospy.Subscriber('scan',LaserScan,self.SubScan)
         self.odom_sub = rospy.Subscriber('odom',Odometry,self.SubOdom)
         self.speed_pub = rospy.Publisher("cmd_vel",Twist,queue_size=5)
+        self.reset_proxy = rospy.ServiceProxy('gazebo/reset_simulation', Empty)
         state_dim = 28
         action_dim = 2    #只控制旋转
         lr = 0.0
@@ -121,7 +124,9 @@ class TD3_Navigation(object):
                 if collision:
                     self.PubSpeed(0,0)
                     self.stage.MissionFinish()
+                    self.reset()
                     rospy.loginfo("COLLISION ON WALLS")
+                    
                 elif finish:
                     self.PubSpeed(0,0)
                     self.stage.MissionFinish()
@@ -132,6 +137,13 @@ class TD3_Navigation(object):
             else:
                 pass
             rate.sleep()
+
+    def reset(self,goal_x=0,goal_y=0):
+        rospy.wait_for_service('gazebo/reset_simulation')
+        try:
+            self.reset_proxy()
+        except (rospy.ServiceException) as e:
+            print("gazebo/reset_simulation service call failed")
 
     def GetSpeed(self,state):
         action = self.td3_network.select_action(state)
@@ -161,6 +173,6 @@ class TD3_Navigation(object):
             self.stage.UpdateOdometry(odom)
         
 if __name__ == '__main__':
-    load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models13") # save trained models
+    load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models113_icra") # save trained models
     load_filename = "TD3_{}".format("stage2")
     td3 = TD3_Navigation(load_directory,load_filename)

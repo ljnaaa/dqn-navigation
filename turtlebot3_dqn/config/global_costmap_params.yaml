@@ -15,7 +15,7 @@ global_costmap:
    origin_x: -5
    origin_y: -5
    inflation_layer: 
-      inflation_radius: 0.32
+      inflation_radius: 0.4
    static_layer:
      lethal_cost_threshold: 1
    plugin:
