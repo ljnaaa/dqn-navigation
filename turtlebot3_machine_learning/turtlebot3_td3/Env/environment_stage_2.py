@@ -28,7 +28,7 @@ from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from respawnGoal import Respawn
-
+import time
 
 class Env():
     def __init__(self):
@@ -40,6 +40,7 @@ class Env():
         self.position = Pose()
         self.pub_cmd_vel = rospy.Publisher('cmd_vel', Twist, queue_size=5)
         self.sub_odom = rospy.Subscriber('odom', Odometry, self.getOdometry)
+        self.sub_scan = rospy.Subscriber('scan',LaserScan,self.getScan)
         self.reset_proxy = rospy.ServiceProxy('gazebo/reset_simulation', Empty)
         self.unpause_proxy = rospy.ServiceProxy('gazebo/unpause_physics', Empty)
         self.pause_proxy = rospy.ServiceProxy('gazebo/pause_physics', Empty)
@@ -50,6 +51,9 @@ class Env():
         goal_distance = round(math.hypot(self.goal_x - self.position.x, self.goal_y - self.position.y), 2)
         self.lastDis = goal_distance
         return goal_distance
+
+    def getScan(self,scan):
+        self.scan = scan
 
     def getOdometry(self, odom):
         self.position = odom.pose.pose.position
@@ -134,18 +138,17 @@ class Env():
         max_angle_vel = 2
         max_linear_spd = 0.3
         vel_cmd = Twist()
+        # vel_cmd.linear.x = 0.2
         vel_cmd.linear.x = action[1] * max_linear_spd/2 + max_linear_spd/2
         vel_cmd.angular.z = action[0] * max_angle_vel
         self.pub_cmd_vel.publish(vel_cmd)
-
         data = None
         while data is None:
             try:
                 data = rospy.wait_for_message('scan', LaserScan, timeout=5)
             except:
                 pass
-
-        state, done, finish = self.getState(data)
+        state, done, finish = self.getState(self.scan)
         reward = self.setReward(state, done, action,goal_x,goal_y)
 
         return np.asarray(state), reward, done, finish

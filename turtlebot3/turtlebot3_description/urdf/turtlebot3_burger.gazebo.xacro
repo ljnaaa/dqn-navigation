@@ -64,7 +64,7 @@
       <rightJoint>wheel_right_joint</rightJoint>
       <wheelSeparation>0.160</wheelSeparation>
       <wheelDiameter>0.066</wheelDiameter>
-      <wheelAcceleration>1</wheelAcceleration>
+      <wheelAcceleration>100</wheelAcceleration>
       <wheelTorque>10</wheelTorque>
       <rosDebugLevel>na</rosDebugLevel>
     </plugin>
@@ -109,7 +109,7 @@
       <ray>
         <scan>
           <horizontal>
-            <samples>24</samples>
+            <samples>72</samples>
             <resolution>1</resolution>
             <!--<min_angle>-1.5708</min_angle>
             <max_angle>1.5708</max_angle>-->

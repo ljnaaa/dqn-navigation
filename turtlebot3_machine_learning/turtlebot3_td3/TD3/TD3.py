@@ -2,41 +2,78 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
+import math
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+# class Actor(nn.Module):
+    
+#     def __init__(self, state_dim, action_dim, max_action):
+#         super(Actor, self).__init__()
+        
+#         self.l1 = nn.Linear(state_dim, 256)
+#         self.l2 = nn.Linear(256, 64)
+#         self.l3 = nn.Linear(64, action_dim)
+        
+#         self.max_action = max_action
+        
+#     def forward(self, state):
+#         a = F.relu(self.l1(state))
+#         a = F.relu(self.l2(a))
+#         a = torch.tanh(self.l3(a)) * self.max_action
+#         return a
+        
+# class Critic(nn.Module):
+#     def __init__(self, state_dim, action_dim):
+#         super(Critic, self).__init__()
+        
+#         self.l1 = nn.Linear(state_dim + action_dim, 256)
+#         self.l2 = nn.Linear(256, 64)
+#         self.l3 = nn.Linear(64, 1)
+        
+#     def forward(self, state, action):
+#         state_action = torch.cat([state, action], 1)
+        
+#         q = F.relu(self.l1(state_action))
+#         q = F.relu(self.l2(q))
+#         q = self.l3(q)
+#         return q
 
 class Actor(nn.Module):
     def __init__(self, state_dim, action_dim, max_action):
         super(Actor, self).__init__()
         
-        self.l1 = nn.Linear(state_dim, 128)
-        self.l2 = nn.Linear(128, 64)
-        self.l3 = nn.Linear(64, action_dim)
+        self.l1 = nn.Linear(state_dim-4, 24)
+        # self.l2 = nn.Linear(256, 24)
+        self.l2 = nn.Linear(28,256)
+        self.l3 = nn.Linear(256,64)
+        self.l4 = nn.Linear(64, action_dim)
         
         self.max_action = max_action
         
     def forward(self, state):
-        a = F.relu(self.l1(state))
-        a = F.relu(self.l2(a))
-        a = torch.tanh(self.l3(a)) * self.max_action
+        a = F.relu(self.l1(state[:,:-4]))
+        a = F.relu(self.l2(torch.cat([a,state[:,-4:]],1)))
+        a = F.relu(self.l3(a))
+        a = torch.tanh(self.l4(a)) * self.max_action
         return a
         
 class Critic(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(Critic, self).__init__()
         
-        self.l1 = nn.Linear(state_dim + action_dim, 128)
-        self.l2 = nn.Linear(128, 64)
-        self.l3 = nn.Linear(64, 1)
+        self.l1 = nn.Linear(state_dim-4, 24)
+        self.l2 = nn.Linear(24+4+action_dim, 256)
+        self.l3 = nn.Linear(256,64)
+        self.l4 = nn.Linear(64, 1)
         
     def forward(self, state, action):
-        state_action = torch.cat([state, action], 1)
-        
-        q = F.relu(self.l1(state_action))
-        q = F.relu(self.l2(q))
-        q = self.l3(q)
-        return q
-    
+        # state_action = torch.cat([state, action], 1)
+        q = F.relu(self.l1(state[:,:-4]))
+        q = F.relu(self.l2(torch.cat([q,state[:,-4:],action],1)))
+        q = F.relu(self.l3(q))
+        q = self.l4(q)
+        return q    
+
 class TD3:
     def __init__(self, lr, state_dim, action_dim, max_action):
         
@@ -60,6 +97,35 @@ class TD3:
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
         return self.actor(state).cpu().data.numpy().flatten()
+
+    # def state_estimate(self,state,action):
+    #     laser = state[:-4]
+    #     heading = state[-4]
+    #     dis = state[-3]
+
+    #     delta_t = 0.2
+    #     max_angle_vel = 2
+    #     max_linear_spd = 0.3
+    #     vx = action[1] * max_linear_spd/2 + max_linear_spd/2
+    #     wz = action[0] * max_angle_vel
+    #     theta = wz * delta_t
+    #     delta_x = vx * delta_t
+    #     new_dis = dis - delta_x * math.cos(theta)
+    #     new_heading = heading - theta
+
+    #     if new_heading > math.pi:
+    #         new_heading -= 2 * math.pi
+
+    #     elif new_heading < -math.pi:
+    #         new_heading += 2 * math.pi
+
+    #     return new_dis,new_heading
+
+
+
+
+
+
     
     def update(self, replay_buffer, n_iter, batch_size, gamma, polyak, policy_noise, noise_clip, policy_delay):
         

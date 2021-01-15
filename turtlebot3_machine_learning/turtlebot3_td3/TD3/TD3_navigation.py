@@ -14,6 +14,7 @@ from geometry_msgs.msg import PoseStamped,Point,Twist
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
+import time
 
 
 
@@ -146,7 +147,10 @@ class TD3_Navigation(object):
             print("gazebo/reset_simulation service call failed")
 
     def GetSpeed(self,state):
+        time1 = time.time()
         action = self.td3_network.select_action(state)
+        time2 = time.time()
+        print("Use Time:{}".format(time2-time1))
         max_angle_vel = 2
         max_linear_spd = 0.3
         linear = action[1] * max_linear_spd/2 + max_linear_spd/2
