@@ -45,7 +45,7 @@ class Env():
         self.unpause_proxy = rospy.ServiceProxy('gazebo/unpause_physics', Empty)
         self.pause_proxy = rospy.ServiceProxy('gazebo/pause_physics', Empty)
         self.respawn_goal = Respawn()
-        self.action_space_shape = 1
+        self.action_space_shape = 2
 
     def getGoalDistace(self):
         goal_distance = round(math.hypot(self.goal_x - self.position.x, self.goal_y - self.position.y), 2)
@@ -71,6 +71,8 @@ class Env():
             heading += 2 * pi
 
         self.heading = round(heading, 2)
+        self.vx = odom.twist.twist.linear.x
+        self.wz = odom.twist.twist.angular.z
 
     def getState(self, scan):
         scan_range = []
@@ -99,6 +101,8 @@ class Env():
             finish = True
         # return scan_range + [heading, current_distance], done, finish
         return scan_range + [heading, current_distance, obstacle_min_range, obstacle_angle], done, finish
+
+        # return scan_range + [heading, current_distance, obstacle_min_range, obstacle_angle,self.vx,self.wz], done, finish
 
     def setReward(self, state, done, action,goal_x=0,goal_y=0):
         current_distance = state[-3]
@@ -134,7 +138,41 @@ class Env():
 
         return reward
 
-    def step(self, action,goal_x=0,goal_y=0):
+    def setMoveReward(self, state, done, action,goal_x=0,goal_y=0):
+        current_distance = state[-3]
+        heading = state[-4]
+        angle = heading+action[0]*pi/8 +pi/2
+        tr = 1 - 4 * math.fabs(0.5 - math.modf(0.25 + 0.5 * (angle) % (2 * math.pi) / math.pi)[0])   # tr->1 when angle->0 tr->-1 when angle->180
+        move_dis = (self.lastDis - current_distance ) * 150
+        self.lastDis = current_distance
+        # reward = 0
+        distance_rate = 2 ** (current_distance / self.goal_distance)
+        # reward = ((round(tr*5, 2)) * distance_rate)
+        reward = move_dis
+        if done:
+            rospy.loginfo("Collision!!")
+            reward = -150
+            self.pub_cmd_vel.publish(Twist())
+            if goal_x == 0 and goal_y == 0:
+                self.goal_x, self.goal_y = self.respawn_goal.getPosition(True, delete=True)
+            else:
+                self.goal_x, self.goal_y = self.respawn_goal.Setgoal(goal_x,goal_y)
+            self.goal_distance = self.getGoalDistace()
+
+        if self.get_goalbox:
+            # rospy.loginfo("Goal!!")
+            reward = 200
+            self.pub_cmd_vel.publish(Twist())
+            if goal_x == 0 and goal_y == 0:
+                self.goal_x, self.goal_y = self.respawn_goal.getPosition(True, delete=True)
+            else:
+                self.goal_x, self.goal_y = self.respawn_goal.Setgoal(goal_x,goal_y)
+            self.goal_distance = self.getGoalDistace()
+            self.get_goalbox = False
+
+        return reward
+
+    def step(self, action,goal_x=0,goal_y=0,MoveReward=False):
         max_angle_vel = 2
         max_linear_spd = 0.3
         vel_cmd = Twist()
@@ -142,6 +180,15 @@ class Env():
         vel_cmd.linear.x = action[1] * max_linear_spd/2 + max_linear_spd/2
         vel_cmd.angular.z = action[0] * max_angle_vel
         self.pub_cmd_vel.publish(vel_cmd)
+        # max_angular_acc = 5.0
+        # max_vel_acc = 5.0
+        # vel_cmd = Twist()
+        # vel_cmd.linear.x = action[1] * max_vel_acc + self.vx
+        # vel_cmd.angular.z = action[0] * max_angular_acc +self.wz
+        # vel_cmd.linear.x = max(0,min(vel_cmd.linear.x,0.3))
+        # vel_cmd.angular.z = max(-2,min(vel_cmd.angular.z,2))
+        # self.pub_cmd_vel.publish(vel_cmd)
+
         data = None
         while data is None:
             try:
@@ -149,8 +196,10 @@ class Env():
             except:
                 pass
         state, done, finish = self.getState(self.scan)
-        reward = self.setReward(state, done, action,goal_x,goal_y)
-
+        if not MoveReward:
+            reward = self.setReward(state, done, action,goal_x,goal_y)
+        else:
+            reward = self.setMoveReward(state, done, action,goal_x,goal_y)
         return np.asarray(state), reward, done, finish
 
     def Humanstep(self):

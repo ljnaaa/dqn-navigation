@@ -36,6 +36,10 @@ class ReplayBuffer:
     def __len__(self):
         return len(self.buffer)
 
+    def clear(self):
+        self.buffer = []
+        self.size = 0
+
 class MultiStepMemory:
     def __init__(self,n,gamma,maxLength = 100000):
         self._memory = deque(maxlen = maxLength)

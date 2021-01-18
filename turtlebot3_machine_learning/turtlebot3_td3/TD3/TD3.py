@@ -44,7 +44,7 @@ class Actor(nn.Module):
         
         self.l1 = nn.Linear(state_dim-4, 24)
         # self.l2 = nn.Linear(256, 24)
-        self.l2 = nn.Linear(28,256)
+        self.l2 = nn.Linear(24+4,256)
         self.l3 = nn.Linear(256,64)
         self.l4 = nn.Linear(64, action_dim)
         

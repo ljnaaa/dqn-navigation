@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding:utf-8 -*-
 #################################################################################
 # Copyright 2018 ROBOTIS CO., LTD.
 #
@@ -202,7 +203,7 @@ class Env():
         reward = 0
         # distance_rate = 2 ** (current_distance / self.goal_distance)
         # reward = ((round(tr*5, 2)) * distance_rate)
-        reward = move_dis
+        reward = move_dis - abs(action[0]) * 1 #角度变化惩罚
         if done:
             rospy.loginfo("Collision!!")
             reward = -150
