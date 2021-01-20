@@ -98,6 +98,11 @@ class TD3:
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
         return self.actor(state).cpu().data.numpy().flatten()
 
+    def analyze_action(self,state,action):
+        result1 = self.critic_1(state,action)
+        result2 = self.critic_2(state,action)
+        return result1,result2
+
     # def state_estimate(self,state,action):
     #     laser = state[:-4]
     #     heading = state[-4]

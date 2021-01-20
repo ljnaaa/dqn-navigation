@@ -14,6 +14,7 @@ from geometry_msgs.msg import PoseStamped,Point,Twist
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
+from  collections import deque
 import time
 
 
@@ -28,6 +29,7 @@ class stage(object):
         self.start = PoseStamped()
         self.heading = 0.0
         self.position = Point()
+        self.last_time = 0
 
 
     def UpdateScan(self,scan):
@@ -45,6 +47,10 @@ class stage(object):
         
     def UpdateOdometry(self,odom):
         if self.InMission:
+            ax = (odom.pose.pose.position.x - self.position.x) / (time.time()-self.last_time)
+            ay = (odom.pose.pose.position.y - self.position.y) / (time.time()-self.last_time)
+            self.last_time = time.time()
+            print("ax,ay:{},{}".format(ax,ay))
             self.position = odom.pose.pose.position
             orientation = odom.pose.pose.orientation
             orientation_list = [orientation.x, orientation.y, orientation.z, orientation.w]
@@ -105,6 +111,7 @@ class TD3_Navigation(object):
         self.odom_sub = rospy.Subscriber('odom',Odometry,self.SubOdom)
         self.speed_pub = rospy.Publisher("cmd_vel",Twist,queue_size=5)
         self.reset_proxy = rospy.ServiceProxy('gazebo/reset_simulation', Empty)
+        self.replaybuffer = deque(maxlen=4)
         state_dim = 76
         action_dim = 2    #只控制旋转
         lr = 0.0
@@ -124,6 +131,8 @@ class TD3_Navigation(object):
                     continue
                 if collision:
                     self.PubSpeed(0,0)
+                    self.replaybuffer.append([state,collision,finish,0,0])
+                    print(self.replaybuffer)
                     self.stage.MissionFinish()
                     self.reset()
                     rospy.loginfo("COLLISION ON WALLS")
@@ -134,6 +143,7 @@ class TD3_Navigation(object):
                     rospy.loginfo("FINISH TASK")
                 else:
                     linear,angular = self.GetSpeed(np.asarray(state))
+                    self.replaybuffer.append([state,collision,finish,linear,angular])
                     self.PubSpeed(linear,angular)
             else:
                 pass
@@ -177,6 +187,6 @@ class TD3_Navigation(object):
             self.stage.UpdateOdometry(odom)
         
 if __name__ == '__main__':
-    load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models117_laser72_2") # save trained models
+    load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models115_laser72") # save trained models
     load_filename = "TD3_{}".format("stage2")
     td3 = TD3_Navigation(load_directory,load_filename)
