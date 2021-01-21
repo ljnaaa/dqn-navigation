@@ -198,12 +198,13 @@ class Env():
         heading = state[-4]
         angle = heading+action[0]*pi/8 +pi/2
         tr = 1 - 4 * math.fabs(0.5 - math.modf(0.25 + 0.5 * (angle) % (2 * math.pi) / math.pi)[0])   # tr->1 when angle->0 tr->-1 when angle->180
-        move_dis = (self.lastDis - current_distance ) * 150
+        move_dis = (self.lastDis - current_distance ) * 100
         self.lastDis = current_distance
         reward = 0
         # distance_rate = 2 ** (current_distance / self.goal_distance)
         # reward = ((round(tr*5, 2)) * distance_rate)
-        reward = move_dis - abs(action[0]) * 1 #角度变化惩罚
+        # reward = move_dis - abs(action[0]) * 1 #角度变化惩罚
+        reward = move_dis
         if done:
             rospy.loginfo("Collision!!")
             reward = -150
