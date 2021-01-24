@@ -187,24 +187,27 @@ class Env():
         if min_range > min(scan_range) > 0:
             collision = True
         current_distance = round(math.hypot(self.goal_x - self.position.x, self.goal_y - self.position.y), 2)
-        if current_distance < 0.15:
+        if current_distance < 0.2:
             finish = True
             self.get_goalbox = True
         # return scan_range + [heading, current_distance], done, finish
         return scan_range + [heading, current_distance, obstacle_min_range, obstacle_angle], collision, finish
 
     def setReward(self, state, done, action,goal_x=0,goal_y=0):
+        obstacle_min_range = state[-2]
         current_distance = state[-3]
         heading = state[-4]
         angle = heading+action[0]*pi/8 +pi/2
         tr = 1 - 4 * math.fabs(0.5 - math.modf(0.25 + 0.5 * (angle) % (2 * math.pi) / math.pi)[0])   # tr->1 when angle->0 tr->-1 when angle->180
-        move_dis = (self.lastDis - current_distance ) * 100
+        move_dis = (self.lastDis - current_distance ) * 20
         self.lastDis = current_distance
         reward = 0
         # distance_rate = 2 ** (current_distance / self.goal_distance)
         # reward = ((round(tr*5, 2)) * distance_rate)
-        # reward = move_dis - abs(action[0]) * 1 #角度变化惩罚
-        reward = move_dis
+        reward = move_dis - 0.15*abs(action[0])
+        # reward = move_dis
+        if obstacle_min_range < 0.25:
+            reward = -30
         if done:
             rospy.loginfo("Collision!!")
             reward = -150

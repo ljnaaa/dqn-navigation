@@ -112,7 +112,7 @@ class TD3_Navigation(object):
         self.speed_pub = rospy.Publisher("cmd_vel",Twist,queue_size=5)
         self.reset_proxy = rospy.ServiceProxy('gazebo/reset_simulation', Empty)
         self.replaybuffer = deque(maxlen=4)
-        state_dim = 76
+        state_dim = 64
         action_dim = 2    #只控制旋转
         lr = 0.0
         max_action = 1.0
@@ -187,6 +187,6 @@ class TD3_Navigation(object):
             self.stage.UpdateOdometry(odom)
         
 if __name__ == '__main__':
-    load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models115_laser72") # save trained models
+    load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models121_60_anglepunish") # save trained models
     load_filename = "TD3_{}".format("stage2")
     td3 = TD3_Navigation(load_directory,load_filename)

@@ -27,10 +27,10 @@ def train(state_dim,action_dim):
     policy_noise = 1.0         # target policy smoothing noise
     noise_clip = 0.5
     policy_delay = 2            # delayed policy updates parameter
-    max_episodes = 600         # max num of episodes
+    max_episodes = 200         # max num of episodes
     max_timesteps = 500        # max timesteps in one episode
-    load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models120_60") # save trained models
-    directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models121_60") # save trained models
+    load_directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models122_60") # save trained models
+    directory = os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))),"steer&spd/models122_60_2") # save trained models
     if not os.path.exists(directory):
         os.mkdir(directory)
         print("Make Folder")
@@ -111,7 +111,7 @@ def train(state_dim,action_dim):
 #step 2
     print("STEP 2 START")
     replay_buffer.clear()
-    exploration_noise = 0.6
+    exploration_noise = 0.2
     max_episodes = 1000
     for episode in range(1, max_episodes+1):
         state = env.reset()
