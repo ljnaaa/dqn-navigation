@@ -188,7 +188,7 @@ class Env():
         if min_range > min(scan_range) > 0:
             collision = True
         current_distance = round(math.hypot(self.goal_x - self.position.x, self.goal_y - self.position.y), 2)
-        if current_distance < 0.15:
+        if current_distance < 0.2:
             finish = True
             self.get_goalbox = True
         # return scan_range + [heading, current_distance], done, finish
@@ -201,7 +201,7 @@ class Env():
         heading = state[-4]
         angle = heading+action[0]*pi/8 +pi/2
         tr = 1 - 4 * math.fabs(0.5 - math.modf(0.25 + 0.5 * (angle) % (2 * math.pi) / math.pi)[0])   # tr->1 when angle->0 tr->-1 when angle->180
-        move_dis = (self.lastDis - current_distance ) * 100
+        move_dis = (self.lastDis - current_distance ) * 20
         self.lastDis = current_distance
         reward = 0
         # distance_rate = 2 ** (current_distance / self.goal_distance)

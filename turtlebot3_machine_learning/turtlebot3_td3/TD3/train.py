@@ -49,7 +49,7 @@ def train(state_dim, action_dim):
     policy_noise = 1.0         # target policy smoothing noise
     noise_clip = 0.5
     policy_delay = 2            # delayed policy updates parameter
-    max_episodes = 600         # max num of episodes
+    max_episodes = 200         # max num of episodes
     max_timesteps = 500        # max timesteps in one episode
     pretrain_times = 200
     warmup_epoch = 0
