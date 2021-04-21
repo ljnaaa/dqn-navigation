@@ -4,8 +4,9 @@ from collections import deque
 import time
 
 class ReplayBuffer:
-    def __init__(self, max_size=5e5):
+    def __init__(self, max_size=2e5):
         self.buffer = []
+        self.databuffer = []
         self.max_size = int(max_size)
         self.size = 0
     
@@ -13,8 +14,33 @@ class ReplayBuffer:
         self.size +=1
         # transiton is tuple of (state, action, reward, next_state, done)
         self.buffer.append(transition)
+
+    def importDataset(self,dataset):
+        print("IMPORT DATASET WITH LENGTH:{}".format(len(dataset)))
+        self.databuffer+=dataset
+
+    def move_data(self):
+        self.buffer+=self.databuffer
+
+
+    def sample(self,batch_size,mode):
+        if mode == 0:   #normal_sample
+            return self.normal_sample(batch_size)
+        elif mode == 1: #dataset_sample
+            return self.dataset_sample(batch_size)
+        else: #mixsample
+            return self.warmup_sample(batch_size)
+
     
-    def sample(self, batch_size):
+    def warmup_sample(self,batch_size):
+        dataset_sample = self.dataset_sample(batch_size/2)
+        normal_sample = self.normal_sample(batch_size/2)
+        sample =[]
+        for i in range(len(dataset_sample)):
+            sample.append(np.concatenate((dataset_sample[i],normal_sample[i]),axis=0))
+        return sample
+
+    def normal_sample(self, batch_size):
         # delete 1/5th of the buffer when full
         if self.size > self.max_size:
             del self.buffer[0:int(self.size/5)]
@@ -25,6 +51,22 @@ class ReplayBuffer:
         
         for i in indexes:
             s, a, r, s_, d = self.buffer[i]
+            state.append(np.array(s, copy=False))
+            action.append(np.array(a, copy=False))
+            reward.append(np.array(r, copy=False))
+            next_state.append(np.array(s_, copy=False))
+            done.append(np.array(d, copy=False))
+        
+        return np.array(state), np.array(action), np.array(reward), np.array(next_state), np.array(done)
+
+    def dataset_sample(self, batch_size):
+        # delete 1/5th of the buffer when full
+        
+        indexes = np.random.randint(0, len(self.databuffer), size=batch_size)
+        state, action, reward, next_state, done = [], [], [], [], []
+        
+        for i in indexes:
+            s, a, r, s_, d = self.databuffer[i]
             state.append(np.array(s, copy=False))
             action.append(np.array(a, copy=False))
             reward.append(np.array(r, copy=False))

@@ -91,11 +91,15 @@ class TD3:
         self.critic_2_target = Critic(state_dim, action_dim).to(device)
         self.critic_2_target.load_state_dict(self.critic_2.state_dict())
         self.critic_2_optimizer = optim.Adam(self.critic_2.parameters(), lr=lr)
-        
+        self.state_dim = state_dim
         self.max_action = max_action
     
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
+        return self.actor(state).cpu().data.numpy().flatten()
+
+    def batch_inference(self,state):
+        state = torch.FloatTensor(state.reshape(-1, self.state_dim)).to(device)
         return self.actor(state).cpu().data.numpy().flatten()
 
     def analyze_action(self,state,action):
@@ -125,37 +129,157 @@ class TD3:
     #         new_heading += 2 * math.pi
 
     #     return new_dis,new_heading
-
-
-
-
-
-
-    
-    def update(self, replay_buffer, n_iter, batch_size, gamma, polyak, policy_noise, noise_clip, policy_delay):
-        
+    def actor_SL(self,replay_buffer,n_iter,batch_size,sample_mode=1):
         for i in range(n_iter):
             # Sample a batch of transitions from replay buffer:
-            state, action_, reward, next_state, done = replay_buffer.sample(batch_size)
+            state, action_, reward, next_state, done = replay_buffer.sample(batch_size,sample_mode)
+            # state, action_, reward, next_state, done,idx,weights = replay_buffer.sample(batch_size)
+            state = torch.FloatTensor(state).to(device)
+            action = torch.FloatTensor(action_).to(device)
+            action_inference = self.actor(state)
+            actor_loss = F.mse_loss(action_inference,action).mean()
+            # Optimize the actor
+            self.actor_optimizer.zero_grad()
+            actor_loss.backward()
+            self.actor_optimizer.step()
+            if i == 0:
+                print("actor_loss:%d",actor_loss.item())
+
+        for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
+            target_param.data.copy_( param.data)
+
+    def critic_SL(self, replay_buffer, n_iter, batch_size, gamma, polyak, policy_noise, noise_clip, policy_delay,sample_mode=1):
+
+        for i in range(n_iter):
+            # Sample a batch of transitions from replay buffer:
+            state, action_, reward, next_state, done = replay_buffer.sample(batch_size,sample_mode)
             # state, action_, reward, next_state, done,idx,weights = replay_buffer.sample(batch_size)
             state = torch.FloatTensor(state).to(device)
             action = torch.FloatTensor(action_).to(device)
             reward = torch.FloatTensor(reward).reshape((batch_size,1)).to(device)
             next_state = torch.FloatTensor(next_state).to(device)
             done = torch.FloatTensor(done).reshape((batch_size,1)).to(device)
-            
             # Select next action according to target policy:
             noise = torch.FloatTensor(action_).data.normal_(0, policy_noise).to(device)
             noise = noise.clamp(-noise_clip, noise_clip)
             next_action = (self.actor_target(next_state) + noise)
             next_action = next_action.clamp(-self.max_action, self.max_action)
-            
+
             # Compute target Q-value:
             target_Q1 = self.critic_1_target(next_state, next_action)
             target_Q2 = self.critic_2_target(next_state, next_action)
             target_Q = torch.min(target_Q1, target_Q2)
             target_Q = reward + ((1-done) * gamma * target_Q).detach()
+
+            # Optimize Critic 1:
+            current_Q1 = self.critic_1(state, action)
+            # replay_buffer.batch_update(idx,torch.abs(target_Q-current_Q1).detach().cpu().numpy())
+            # loss_Q1 = (torch.pow(current_Q1-target_Q,2) * torch.FloatTensor(weights).cuda()).mean()
+            loss_Q1 = F.mse_loss(current_Q1, target_Q)
+            self.critic_1_optimizer.zero_grad()
+            loss_Q1.backward()
+            self.critic_1_optimizer.step()
             
+            # Optimize Critic 2:
+            current_Q2 = self.critic_2(state, action)
+            # loss_Q2 = (torch.pow(current_Q2-target_Q,2) * torch.FloatTensor(weights).cuda()).mean()
+            loss_Q2 = F.mse_loss(current_Q2, target_Q)
+            self.critic_2_optimizer.zero_grad()
+            loss_Q2.backward()
+            self.critic_2_optimizer.step()
+
+            if i == 0:
+                print("critic_loss:{}".format(loss_Q1.item()))
+            
+            for param, target_param in zip(self.critic_1.parameters(), self.critic_1_target.parameters()):
+                target_param.data.copy_( (polyak * target_param.data) + ((1-polyak) * param.data))
+            
+            for param, target_param in zip(self.critic_2.parameters(), self.critic_2_target.parameters()):
+                target_param.data.copy_( (polyak * target_param.data) + ((1-polyak) * param.data))
+    
+    
+    def SL(self, replay_buffer, n_iter, batch_size, gamma, polyak, policy_noise, noise_clip, policy_delay,sample_mode=0):
+        for i in range(n_iter):
+            # Sample a batch of transitions from replay buffer:
+            state, action_, reward, next_state, done = replay_buffer.sample(batch_size,sample_mode)
+            # state, action_, reward, next_state, done,idx,weights = replay_buffer.sample(batch_size)
+            state = torch.FloatTensor(state).to(device)
+            action = torch.FloatTensor(action_).to(device)
+            reward = torch.FloatTensor(reward).reshape((batch_size,1)).to(device)
+            next_state = torch.FloatTensor(next_state).to(device)
+            done = torch.FloatTensor(done).reshape((batch_size,1)).to(device)
+            # Select next action according to target policy:
+            noise = torch.FloatTensor(action_).data.normal_(0, policy_noise).to(device)
+            noise = noise.clamp(-noise_clip, noise_clip)
+            next_action = (self.actor_target(next_state) + noise)
+            next_action = next_action.clamp(-self.max_action, self.max_action)
+
+            # Compute target Q-value:
+            target_Q1 = self.critic_1_target(next_state, next_action)
+            target_Q2 = self.critic_2_target(next_state, next_action)
+            target_Q = torch.min(target_Q1, target_Q2)
+            target_Q = reward + ((1-done) * gamma * target_Q).detach()
+
+            # Optimize Critic 1:
+            current_Q1 = self.critic_1(state, action)
+            # replay_buffer.batch_update(idx,torch.abs(target_Q-current_Q1).detach().cpu().numpy())
+            # loss_Q1 = (torch.pow(current_Q1-target_Q,2) * torch.FloatTensor(weights).cuda()).mean()
+            loss_Q1 = F.mse_loss(current_Q1, target_Q)
+            self.critic_1_optimizer.zero_grad()
+            loss_Q1.backward()
+            self.critic_1_optimizer.step()
+            
+            # Optimize Critic 2:
+            current_Q2 = self.critic_2(state, action)
+            # loss_Q2 = (torch.pow(current_Q2-target_Q,2) * torch.FloatTensor(weights).cuda()).mean()
+            loss_Q2 = F.mse_loss(current_Q2, target_Q)
+            self.critic_2_optimizer.zero_grad()
+            loss_Q2.backward()
+            self.critic_2_optimizer.step()
+
+            action_inference = self.actor(state)
+            actor_loss = F.mse_loss(action_inference,action).mean()
+            # Optimize the actor
+            self.actor_optimizer.zero_grad()
+            actor_loss.backward()
+            self.actor_optimizer.step()
+            if i == 0:
+                print("actor_loss:{},critic_loss:{}".format(actor_loss.item(),loss_Q1.item()))
+            # Polyak averaging update:
+            for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
+                target_param.data.copy_( (polyak * target_param.data) + ((1-polyak) * param.data))
+            
+            for param, target_param in zip(self.critic_1.parameters(), self.critic_1_target.parameters()):
+                target_param.data.copy_( (polyak * target_param.data) + ((1-polyak) * param.data))
+            
+            for param, target_param in zip(self.critic_2.parameters(), self.critic_2_target.parameters()):
+                target_param.data.copy_( (polyak * target_param.data) + ((1-polyak) * param.data))
+
+
+
+    
+    def update(self, replay_buffer, n_iter, batch_size, gamma, polyak, policy_noise, noise_clip, policy_delay,sample_mode=0):
+        for i in range(n_iter):
+            # Sample a batch of transitions from replay buffer:
+            state, action_, reward, next_state, done = replay_buffer.sample(batch_size,sample_mode)
+            # state, action_, reward, next_state, done,idx,weights = replay_buffer.sample(batch_size)
+            state = torch.FloatTensor(state).to(device)
+            action = torch.FloatTensor(action_).to(device)
+            reward = torch.FloatTensor(reward).reshape((batch_size,1)).to(device)
+            next_state = torch.FloatTensor(next_state).to(device)
+            done = torch.FloatTensor(done).reshape((batch_size,1)).to(device)
+            # Select next action according to target policy:
+            noise = torch.FloatTensor(action_).data.normal_(0, policy_noise).to(device)
+            noise = noise.clamp(-noise_clip, noise_clip)
+            next_action = (self.actor_target(next_state) + noise)
+            next_action = next_action.clamp(-self.max_action, self.max_action)
+
+            # Compute target Q-value:
+            target_Q1 = self.critic_1_target(next_state, next_action)
+            target_Q2 = self.critic_2_target(next_state, next_action)
+            target_Q = torch.min(target_Q1, target_Q2)
+            target_Q = reward + ((1-done) * gamma * target_Q).detach()
+
             # Optimize Critic 1:
             current_Q1 = self.critic_1(state, action)
             # replay_buffer.batch_update(idx,torch.abs(target_Q-current_Q1).detach().cpu().numpy())
@@ -177,12 +301,12 @@ class TD3:
             if i % policy_delay == 0:
                 # Compute actor loss:
                 actor_loss = -self.critic_1(state, self.actor(state)).mean()
-                
                 # Optimize the actor
                 self.actor_optimizer.zero_grad()
                 actor_loss.backward()
                 self.actor_optimizer.step()
-                
+                if i == 0:
+                    print("actor_loss:{},critic_loss:{}".format(actor_loss.item(),loss_Q1.item()))
                 # Polyak averaging update:
                 for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
                     target_param.data.copy_( (polyak * target_param.data) + ((1-polyak) * param.data))

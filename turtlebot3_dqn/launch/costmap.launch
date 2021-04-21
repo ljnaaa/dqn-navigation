@@ -5,7 +5,10 @@
     <rosparam file="$(find turtlebot3_dqn)/config/costmap_common_params.yaml" command="load" />
     <rosparam file="$(find turtlebot3_dqn)/config/base_local_planner_params.yaml" command="load" />
     <rosparam file="$(find turtlebot3_dqn)/config/dwa_local_planner_params.yaml" command="load" />
-    <remap from="cmd_vel" to="cmd_vel_recommand"/>
+    
+    <!--<param name="base_global_planner" value="global_planner/GlobalPlanner"/> 
+    <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS" />-->
+    <!-- <remap from="cmd_vel" to="cmd_vel_recommand"/> -->
  </node>
 </launch>
 

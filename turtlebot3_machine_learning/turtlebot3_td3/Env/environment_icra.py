@@ -121,6 +121,7 @@ class Env():
         self.goal_x = 0
         self.goal_y = 0
         self.heading = 0
+        self.twist = Twist()
         self.initGoal = True
         self.get_goalbox = False
         self.position = Pose()
@@ -157,7 +158,7 @@ class Env():
         orientation = odom.pose.pose.orientation
         orientation_list = [orientation.x, orientation.y, orientation.z, orientation.w]
         _, _, yaw = euler_from_quaternion(orientation_list)
-
+        self.twist = odom.twist.twist
         goal_angle = math.atan2(self.goal_y - self.position.y, self.goal_x - self.position.x)
 
         heading = goal_angle - yaw
@@ -192,8 +193,10 @@ class Env():
             self.get_goalbox = True
         # return scan_range + [heading, current_distance], done, finish
         return scan_range + [heading, current_distance, obstacle_min_range, obstacle_angle], collision, finish
+        return scan_range + [self.twist.linear.x,self.twist.angular.z,heading, current_distance, obstacle_min_range, obstacle_angle], collision, finish
 
     def setReward(self, state, done, action,goal_x=0,goal_y=0):
+        obstacle_min_range = state[-2]
         current_distance = state[-3]
         heading = state[-4]
         angle = heading+action[0]*pi/8 +pi/2
@@ -204,7 +207,10 @@ class Env():
         # distance_rate = 2 ** (current_distance / self.goal_distance)
         # reward = ((round(tr*5, 2)) * distance_rate)
         # reward = move_dis - abs(action[0]) * 1 #角度变化惩罚
+
         reward = move_dis
+        if obstacle_min_range < 0.25:
+            reward = -30
         if done:
             rospy.loginfo("Collision!!")
             reward = -150

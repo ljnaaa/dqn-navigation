@@ -23,5 +23,7 @@
    <node pkg="tf" type="static_transform_publisher" name="map_odom_broadcaster" args="0.2 0.2 0 0 0 0 /map /odom 100" />
    <node pkg="tf" type="static_transform_publisher" name="baselink_broadcaster" args="0.0 0.0 0 0 0 0 /base_footprint /base_link 100" />
    <node pkg="tf" type="static_transform_publisher" name="laser_broadcaster" args="0.0 0.0 0.3 0 0 0 /base_footprint /base_scan 100" />
+    
+
 
 </launch>
